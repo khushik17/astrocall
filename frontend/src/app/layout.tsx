@@ -4,7 +4,7 @@ import "@livekit/components-styles";
 import { AuthProvider } from "@/hooks/useAuth";
 import StarCanvas from "@/components/StarCanvas";
 import GlobalCallAlert from "@/components/GlobalCallAlert";
-import MobileBlocker from "@/components/MobileBlocker";
+
 
 
 
