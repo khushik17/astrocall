@@ -56,9 +56,7 @@ export default function CustomCallRoom({
     return (
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column" }}>
 
-            {/* ── 🔊 THIS IS WHAT MAKES AUDIO WORK ──────────────────────────────
-                RoomAudioRenderer subscribes to all remote audio tracks and plays
-                them. Without this component, you see video but hear nothing.     */}
+        
             <RoomAudioRenderer />
 
             {/* ── Remote video (full screen) ── */}
