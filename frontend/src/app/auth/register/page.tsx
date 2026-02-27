@@ -32,19 +32,22 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 relative z-content">
+    <div className="min-h-screen flex items-center justify-center px-4 py-10 relative z-content">
       <div className="w-full max-w-md animate-slide-up">
-        <div className="text-center mb-8">
+
+        {/* Header */}
+        <div className="text-center mb-6 sm:mb-8">
           <div className="flex justify-center mb-3">
-            <div className="w-16 h-16 rounded-full border border-cosmic-700 flex items-center justify-center animate-pulse-glow">
-              <Star className="w-8 h-8 text-gold-400" fill="currentColor" />
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border border-cosmic-700 flex items-center justify-center animate-pulse-glow">
+              <Star className="w-7 h-7 sm:w-8 sm:h-8 text-gold-400" fill="currentColor" />
             </div>
           </div>
-          <h1 className="font-display text-3xl text-gradient">Begin Your Journey</h1>
-          <p className="font-body text-purple-400 italic mt-1">Your cosmic path awaits</p>
+          <h1 className="font-display text-2xl sm:text-3xl text-gradient">Begin Your Journey</h1>
+          <p className="font-body text-purple-400 italic mt-1 text-sm sm:text-base">Your cosmic path awaits</p>
         </div>
 
-        <div className="card p-8">
+        {/* Card */}
+        <div className="card p-5 sm:p-8">
           {error && (
             <div className="bg-red-900/30 border border-red-700 text-red-300 rounded-lg p-3 mb-4 text-sm font-body">
               {error}
@@ -54,26 +57,55 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block font-body text-purple-300 text-sm mb-1">Full Name</label>
-              <input className="input-field" placeholder="Your name" value={name} onChange={e => setName(e.target.value)} required />
-            </div>
-            <div>
-              <label className="block font-body text-purple-300 text-sm mb-1">Email</label>
-              <input type="email" className="input-field" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} required />
-            </div>
-            <div>
-              <label className="block font-body text-purple-300 text-sm mb-1">Password</label>
-              <input type="password" className="input-field" placeholder="Min 6 characters" value={password} onChange={e => setPassword(e.target.value)} required />
+              <input
+                className="input-field"
+                placeholder="Your name"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                required
+                autoComplete="name"
+              />
             </div>
 
             <div>
+              <label className="block font-body text-purple-300 text-sm mb-1">Email</label>
+              <input
+                type="email"
+                className="input-field"
+                placeholder="your@email.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                /* Prevent iOS zoom on focus (font-size >= 16px handled by input-field,
+                   but add inputMode for better mobile keyboard) */
+                inputMode="email"
+              />
+            </div>
+
+            <div>
+              <label className="block font-body text-purple-300 text-sm mb-1">Password</label>
+              <input
+                type="password"
+                className="input-field"
+                placeholder="Min 6 characters"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+              />
+            </div>
+
+            {/* Role selector */}
+            <div>
               <label className="block font-body text-purple-300 text-sm mb-2">I am a…</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 {(["user", "astrologer"] as UserRole[]).map(r => (
                   <button
                     key={r}
                     type="button"
                     onClick={() => setRole(r)}
-                    className={`py-3 px-4 rounded-lg border font-display text-sm tracking-wide transition-all ${
+                    className={`py-3 px-2 sm:px-4 rounded-lg border font-display text-xs sm:text-sm tracking-wide transition-all ${
                       role === r
                         ? "border-cosmic-500 bg-cosmic-900/50 text-cosmic-300"
                         : "border-mystic-border text-purple-500 hover:border-cosmic-700"
@@ -85,15 +117,22 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <button type="submit" className="btn-gold w-full py-3 mt-2" disabled={loading}>
-              {loading ? "Creating account..." : "Create Account"}
+            <button
+              type="submit"
+              className="btn-gold w-full py-3 mt-2"
+              disabled={loading}
+            >
+              {loading ? "Creating account…" : "Create Account"}
             </button>
           </form>
         </div>
 
-        <p className="text-center font-body text-purple-400 mt-4 text-sm">
+        {/* Footer link */}
+        <p className="text-center font-body text-purple-400 mt-4 text-sm pb-4">
           Already have an account?{" "}
-          <Link href="/auth/login" className="text-cosmic-400 hover:text-cosmic-300 underline">Sign in</Link>
+          <Link href="/auth/login" className="text-cosmic-400 hover:text-cosmic-300 underline">
+            Sign in
+          </Link>
         </p>
       </div>
     </div>
