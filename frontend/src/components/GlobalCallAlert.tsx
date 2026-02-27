@@ -68,7 +68,7 @@ export default function GlobalCallAlert() {
             {/* Backdrop */}
             <div className="absolute inset-0 bg-black/80 backdrop-blur-md" />
 
-            {/* Modal - Layout adapted from mockup */}
+            
             <div
                 className="relative flex flex-col p-8 rounded-3xl border max-w-[440px] w-full mx-4 overflow-hidden"
                 style={{
