@@ -1,8 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
-import { Sparkles, ChevronRight, Phone, Award, Video, Zap, Shield } from "lucide-react";
+import { Sparkles, ChevronRight, Phone, Award, Video, Zap, Shield, Menu, X as XIcon } from "lucide-react";
 
 interface ZodiacSign {
   symbol: string; name: string; dates: string; color: string;
@@ -39,67 +38,231 @@ const LUCKY_LABELS: Record<ReadingTypeId, [string, string, string]> = {
   spiritual:["Sacred Crystal","Mantra Word", "Focus Chakra"],
 };
 
-/* ─── Planets layer (hidden on small screens to reduce clutter) ── */
+/* ─── Inline Navbar ── */
+function CosmicNavbar({ scrollY }: { scrollY: number }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const scrolled = scrollY > 20;
+
+  return (
+    <>
+      <nav style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+        height: scrolled ? "52px" : "68px",
+        transition: "height 0.4s cubic-bezier(0.4,0,0.2,1), background 0.4s ease, backdrop-filter 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease",
+        background: scrolled ? "rgba(6,2,18,0.92)" : "linear-gradient(180deg,rgba(6,2,18,0.65) 0%,transparent 100%)",
+        backdropFilter: scrolled ? "blur(20px)" : "blur(0px)",
+        borderBottom: scrolled ? "1px solid rgba(109,40,217,0.18)" : "1px solid transparent",
+        boxShadow: scrolled ? "0 4px 32px rgba(0,0,0,0.4)" : "none",
+        display: "flex", alignItems: "center",
+        padding: "0 clamp(1rem,4vw,2.5rem)",
+      }}>
+        {/* Logo */}
+        <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none", flexShrink: 0 }}>
+          <span style={{
+            fontFamily: "serif",
+            fontSize: scrolled ? "1.25rem" : "1.45rem",
+            transition: "font-size 0.4s cubic-bezier(0.4,0,0.2,1)",
+            filter: "drop-shadow(0 0 8px rgba(167,139,250,0.7))",
+            lineHeight: 1,
+          }}>✦</span>
+          <span style={{
+            fontFamily: "'Cinzel',serif",
+            fontSize: scrolled ? "0.78rem" : "0.88rem",
+            transition: "font-size 0.4s cubic-bezier(0.4,0,0.2,1)",
+            fontWeight: 700, letterSpacing: "0.18em", color: "#e9d5ff",
+          }}>ASTROCALL</span>
+        </Link>
+
+        {/* Centre nav links — desktop */}
+        <div className="nav-links-desktop" style={{ flex: 1, display: "flex", justifyContent: "center", gap: "clamp(1rem,3vw,2.5rem)" }}>
+          {[["Astrologers","/astrologers"],["Horoscopes","/horoscopes"],["About","/about"]].map(([label,href]) => (
+            <Link key={href} href={href} style={{ fontFamily: "'Cinzel',serif", fontSize: "0.6rem", letterSpacing: "0.14em", color: "#9ca3af", textDecoration: "none", transition: "color 0.2s ease" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "#e9d5ff")}
+              onMouseLeave={e => (e.currentTarget.style.color = "#9ca3af")}
+            >{label.toUpperCase()}</Link>
+          ))}
+        </div>
+
+        {/* Right — auth buttons desktop */}
+        <div className="nav-auth-desktop" style={{ display: "flex", alignItems: "center", gap: "0.55rem", flexShrink: 0 }}>
+          <Link href="/auth/login" style={{
+            fontFamily: "'Cinzel',serif", fontSize: "0.6rem", letterSpacing: "0.12em",
+            color: "#c4b5fd", textDecoration: "none",
+            padding: "0.42rem 0.95rem", borderRadius: "8px",
+            border: "1px solid rgba(139,92,246,0.25)", background: "transparent",
+            transition: "border-color 0.2s,color 0.2s,background 0.2s",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(139,92,246,0.55)"; e.currentTarget.style.background = "rgba(109,40,217,0.12)"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(139,92,246,0.25)"; e.currentTarget.style.background = "transparent"; }}
+          >SIGN IN</Link>
+          <Link href="/auth/register" style={{
+            fontFamily: "'Cinzel',serif", fontSize: "0.6rem", letterSpacing: "0.12em",
+            color: "#0a0415", textDecoration: "none",
+            padding: "0.42rem 1rem", borderRadius: "8px",
+            background: "linear-gradient(110deg,#f59e0b,#d97706)",
+            fontWeight: 700, boxShadow: "0 2px 12px rgba(245,158,11,0.35)",
+            transition: "box-shadow 0.2s,transform 0.2s",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(245,158,11,0.55)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 2px 12px rgba(245,158,11,0.35)"; e.currentTarget.style.transform = "translateY(0)"; }}
+          >GET STARTED</Link>
+        </div>
+
+        {/* Hamburger — mobile */}
+        <button
+          onClick={() => setMobileOpen(v => !v)}
+          className="nav-hamburger"
+          style={{ background: "none", border: "none", cursor: "pointer", color: "#c4b5fd", padding: 6, marginLeft: "auto", display: "none" }}
+          aria-label="Menu"
+        >
+          {mobileOpen ? <XIcon size={20} /> : <Menu size={20} />}
+        </button>
+      </nav>
+
+      {/* Mobile dropdown — smooth max-height animation */}
+      <div style={{
+        position: "fixed",
+        top: scrolled ? "52px" : "68px",
+        left: 0, right: 0, zIndex: 99,
+        background: "rgba(6,2,18,0.97)",
+        borderBottom: "1px solid rgba(109,40,217,0.18)",
+        backdropFilter: "blur(20px)",
+        overflow: "hidden",
+        maxHeight: mobileOpen ? "380px" : "0px",
+        /* cubic-bezier for snappy-yet-smooth slide */
+        transition: "max-height 0.4s cubic-bezier(0.4,0,0.2,1), top 0.4s cubic-bezier(0.4,0,0.2,1)",
+      }} className="nav-mobile-menu">
+        <div style={{ padding: "0.75rem 1.5rem 1.5rem", display: "flex", flexDirection: "column" }}>
+          {[["Astrologers","/astrologers"],["Horoscopes","/horoscopes"],["About","/about"]].map(([label,href]) => (
+            <Link key={href} href={href} onClick={() => setMobileOpen(false)}
+              style={{ fontFamily: "'Cinzel',serif", fontSize: "0.72rem", letterSpacing: "0.12em", color: "#9ca3af", textDecoration: "none", padding: "0.7rem 0", borderBottom: "1px solid rgba(139,92,246,0.07)" }}>
+              {label.toUpperCase()}
+            </Link>
+          ))}
+          <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
+            <Link href="/auth/login" onClick={() => setMobileOpen(false)}
+              style={{ flex: 1, textAlign: "center", fontFamily: "'Cinzel',serif", fontSize: "0.65rem", letterSpacing: "0.12em", color: "#c4b5fd", textDecoration: "none", padding: "0.65rem", borderRadius: "8px", border: "1px solid rgba(139,92,246,0.3)" }}>
+              SIGN IN
+            </Link>
+            <Link href="/auth/register" onClick={() => setMobileOpen(false)}
+              style={{ flex: 1, textAlign: "center", fontFamily: "'Cinzel',serif", fontSize: "0.65rem", letterSpacing: "0.12em", color: "#0a0415", textDecoration: "none", padding: "0.65rem", borderRadius: "8px", background: "linear-gradient(110deg,#f59e0b,#d97706)", fontWeight: 700 }}>
+              GET STARTED
+            </Link>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ─── Planets layer ── */
 function PlanetLayer({ scrollY }: { scrollY: number }) {
   return (
     <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 1, overflow: "hidden" }}>
-      {/* Saturn – top-left, hidden on mobile */}
+
+      {/* Saturn – top-left */}
       <svg width="320" height="200" className="planet-saturn"
         style={{ position: "absolute", top: `${-20 + scrollY * 0.06}px`, left: "-30px", opacity: 0.85, filter: "drop-shadow(0 0 30px rgba(120,60,200,0.5))", transform: `rotate(${scrollY * 0.02}deg)`, transformOrigin: "center" }}
         viewBox="0 0 320 200">
+        <defs>
+          <radialGradient id="satGrad" cx="38%" cy="32%">
+            <stop offset="0%"   stopColor="#7c3aed" />
+            <stop offset="50%"  stopColor="#4c1d95" />
+            <stop offset="100%" stopColor="#1e0a3c" />
+          </radialGradient>
+        </defs>
         <ellipse cx="160" cy="110" rx="140" ry="28" fill="none" stroke="rgba(180,130,255,0.45)" strokeWidth="10" />
         <ellipse cx="160" cy="110" rx="140" ry="28" fill="none" stroke="rgba(140,80,220,0.2)"  strokeWidth="20" />
-        <radialGradient id="satGrad" cx="38%" cy="32%">
-          <stop offset="0%"   stopColor="#7c3aed" />
-          <stop offset="50%"  stopColor="#4c1d95" />
-          <stop offset="100%" stopColor="#1e0a3c" />
-        </radialGradient>
-        <circle cx="160" cy="110" r="58" fill="url(#satGrad)" />
+        <circle  cx="160" cy="110" r="58" fill="url(#satGrad)" />
         <ellipse cx="160" cy="100" rx="55" ry="6" fill="none" stroke="rgba(167,139,250,0.15)" strokeWidth="4" />
         <ellipse cx="160" cy="118" rx="52" ry="5" fill="none" stroke="rgba(167,139,250,0.10)" strokeWidth="3" />
-        <circle cx="245" cy="48" r="14" fill="#2e1065" stroke="rgba(167,139,250,0.3)" strokeWidth="1" />
+        <circle  cx="245" cy="48"  r="14" fill="#2e1065" stroke="rgba(167,139,250,0.3)" strokeWidth="1" />
       </svg>
 
-      {/* Moon – top-right, smaller on mobile */}
+      {/* Moon – top-right */}
       <svg width="160" height="160" className="planet-moon"
         style={{ position: "absolute", top: `${10 + scrollY * 0.04}px`, right: "80px", opacity: 0.75, filter: "drop-shadow(0 0 24px rgba(180,160,255,0.35))", transform: `rotate(${scrollY * -0.015}deg)`, transformOrigin: "center" }}
         viewBox="0 0 160 160">
-        <radialGradient id="moonGrad" cx="40%" cy="35%">
-          <stop offset="0%"   stopColor="#6b5b8a" />
-          <stop offset="60%"  stopColor="#3b2d5e" />
-          <stop offset="100%" stopColor="#1a1033" />
-        </radialGradient>
-        <circle cx="80" cy="80" r="72" fill="url(#moonGrad)" />
-        <circle cx="55" cy="50" r="12" fill="none" stroke="rgba(100,80,140,0.5)" strokeWidth="2.5" />
-        <circle cx="100" cy="65" r="8"  fill="none" stroke="rgba(100,80,140,0.4)" strokeWidth="2" />
-        <circle cx="70" cy="105" r="15" fill="none" stroke="rgba(100,80,140,0.45)" strokeWidth="2.5" />
-        <circle cx="115" cy="95" r="6"  fill="none" stroke="rgba(100,80,140,0.35)" strokeWidth="1.5" />
-        <circle cx="45"  cy="85" r="5"  fill="none" stroke="rgba(100,80,140,0.3)"  strokeWidth="1.5" />
+        <defs>
+          <radialGradient id="moonGrad" cx="40%" cy="35%">
+            <stop offset="0%"   stopColor="#6b5b8a" />
+            <stop offset="60%"  stopColor="#3b2d5e" />
+            <stop offset="100%" stopColor="#1a1033" />
+          </radialGradient>
+        </defs>
+        <circle cx="80"  cy="80"  r="72" fill="url(#moonGrad)" />
+        <circle cx="55"  cy="50"  r="12" fill="none" stroke="rgba(100,80,140,0.5)"  strokeWidth="2.5" />
+        <circle cx="100" cy="65"  r="8"  fill="none" stroke="rgba(100,80,140,0.4)"  strokeWidth="2" />
+        <circle cx="70"  cy="105" r="15" fill="none" stroke="rgba(100,80,140,0.45)" strokeWidth="2.5" />
+        <circle cx="115" cy="95"  r="6"  fill="none" stroke="rgba(100,80,140,0.35)" strokeWidth="1.5" />
+        <circle cx="45"  cy="85"  r="5"  fill="none" stroke="rgba(100,80,140,0.3)"  strokeWidth="1.5" />
       </svg>
 
-      {/* Gas giant – mid-right, hidden on mobile */}
+      {/* Gas giant – mid-right */}
       <svg width="320" height="320" className="planet-gas"
         style={{ position: "absolute", top: `${180 + scrollY * 0.1}px`, right: "-80px", opacity: 0.7, filter: "drop-shadow(0 0 50px rgba(100,30,180,0.4))", transform: `rotate(${scrollY * 0.01}deg)`, transformOrigin: "center" }}
         viewBox="0 0 320 320">
-        <radialGradient id="gasGrad" cx="35%" cy="30%">
-          <stop offset="0%"   stopColor="#7c3aed" />
-          <stop offset="40%"  stopColor="#4c1d95" />
-          <stop offset="80%"  stopColor="#2e1065" />
-          <stop offset="100%" stopColor="#0d0520" />
-        </radialGradient>
-        <circle cx="160" cy="160" r="150" fill="url(#gasGrad)" />
+        <defs>
+          <radialGradient id="gasGrad" cx="35%" cy="30%">
+            <stop offset="0%"   stopColor="#7c3aed" />
+            <stop offset="40%"  stopColor="#4c1d95" />
+            <stop offset="80%"  stopColor="#2e1065" />
+            <stop offset="100%" stopColor="#0d0520" />
+          </radialGradient>
+        </defs>
+        <circle  cx="160" cy="160" r="150" fill="url(#gasGrad)" />
         <ellipse cx="160" cy="135" rx="148" ry="14" fill="none" stroke="rgba(139,92,246,0.12)" strokeWidth="10" />
         <ellipse cx="160" cy="160" rx="146" ry="12" fill="none" stroke="rgba(109,40,217,0.10)" strokeWidth="8" />
         <ellipse cx="160" cy="185" rx="145" ry="10" fill="none" stroke="rgba(139,92,246,0.08)" strokeWidth="6" />
       </svg>
 
-      {/* Comet streak */}
+      {/* Small reddish planet – mid-left (new) */}
+      <svg width="110" height="110" className="planet-small"
+        style={{ position: "absolute", top: `${360 + scrollY * 0.07}px`, left: "24px", opacity: 0.55, filter: "drop-shadow(0 0 16px rgba(245,80,80,0.28))", transform: `rotate(${scrollY * -0.025}deg)` }}
+        viewBox="0 0 110 110">
+        <defs>
+          <radialGradient id="redGrad" cx="35%" cy="30%">
+            <stop offset="0%"   stopColor="#ef4444" />
+            <stop offset="55%"  stopColor="#7f1d1d" />
+            <stop offset="100%" stopColor="#1c0505" />
+          </radialGradient>
+        </defs>
+        <circle  cx="55" cy="55" r="48" fill="url(#redGrad)" />
+        <ellipse cx="55" cy="48" rx="44" ry="5" fill="none" stroke="rgba(248,113,113,0.12)" strokeWidth="5" />
+        <ellipse cx="55" cy="61" rx="42" ry="4" fill="none" stroke="rgba(248,113,113,0.08)" strokeWidth="3" />
+      </svg>
+
+      {/* Ice planet with ring – lower right (new) */}
+      <svg width="100" height="100" className="planet-ice"
+        style={{ position: "absolute", top: `${600 + scrollY * 0.045}px`, right: "150px", opacity: 0.5, filter: "drop-shadow(0 0 14px rgba(103,232,249,0.3))", transform: `rotate(${scrollY * 0.018}deg)` }}
+        viewBox="0 0 100 100">
+        <defs>
+          <radialGradient id="iceGrad" cx="38%" cy="32%">
+            <stop offset="0%"   stopColor="#67e8f9" />
+            <stop offset="55%"  stopColor="#164e63" />
+            <stop offset="100%" stopColor="#03111a" />
+          </radialGradient>
+        </defs>
+        <ellipse cx="50" cy="50" rx="65" ry="11" fill="none" stroke="rgba(103,232,249,0.22)" strokeWidth="3" />
+        <circle  cx="50" cy="50" r="38" fill="url(#iceGrad)" />
+      </svg>
+
+      {/* Comet streak 1 */}
       <div className="planet-comet" style={{
         position: "absolute", top: `${60 + scrollY * 0.02}px`, left: "60px",
         width: "120px", height: "3px",
         background: "linear-gradient(90deg,transparent,rgba(245,158,11,0.8),rgba(255,120,50,0.9))",
         borderRadius: "2px", transform: "rotate(-30deg)", filter: "blur(1px)",
         boxShadow: "0 0 10px rgba(245,158,11,0.7)",
+      }} />
+
+      {/* Comet streak 2 (new) */}
+      <div className="planet-comet2" style={{
+        position: "absolute", top: `${230 + scrollY * 0.015}px`, right: "200px",
+        width: "80px", height: "2px",
+        background: "linear-gradient(90deg,transparent,rgba(139,92,246,0.7),rgba(196,181,253,0.9))",
+        borderRadius: "2px", transform: "rotate(15deg)", filter: "blur(0.5px)",
+        boxShadow: "0 0 8px rgba(139,92,246,0.5)",
       }} />
     </div>
   );
@@ -128,15 +291,12 @@ function ZodiacWheel({ rotation, selectedIdx, hoveredIdx, onSelect, onHover, siz
             <stop offset="0%"   stopColor="#7c3aed" stopOpacity="0.18" />
             <stop offset="100%" stopColor="transparent" stopOpacity="0" />
           </radialGradient>
-          <filter id="wGlow"><feGaussianBlur stdDeviation="3" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
         </defs>
-
         <circle cx={cx} cy={cy} r={outerR + 60 * scale} fill="url(#wBgGlow)" />
         <circle cx={cx} cy={cy} r={outerR + 32 * scale} fill="none" stroke="rgba(139,92,246,0.07)" strokeWidth="1" strokeDasharray="2 12" />
         <circle cx={cx} cy={cy} r={outerR + 14 * scale} fill="none" stroke="rgba(139,92,246,0.13)" strokeWidth="0.8" />
         <circle cx={cx} cy={cy} r={outerR - 2 * scale}  fill="none" stroke="rgba(139,92,246,0.06)" strokeWidth="0.5" />
         <circle cx={cx} cy={cy} r={innerR + 8 * scale}  fill="none" stroke="rgba(139,92,246,0.08)" strokeWidth="0.5" strokeDasharray="1 8" />
-
         {ZODIAC.map((_, i) => {
           const ang = ((i * 30) + rotation - 90) * (Math.PI / 180);
           return <line key={i}
@@ -144,7 +304,6 @@ function ZodiacWheel({ rotation, selectedIdx, hoveredIdx, onSelect, onHover, siz
             x2={cx + (outerR - 5 * scale)  * Math.cos(ang)} y2={cy + (outerR - 5 * scale)  * Math.sin(ang)}
             stroke="rgba(139,92,246,0.06)" strokeWidth="0.5" />;
         })}
-
         {ZODIAC.map((z, i) => {
           const ang = ((i * 30) + rotation - 90) * (Math.PI / 180);
           const r = (outerR + innerR) / 2 + 6 * scale;
@@ -161,13 +320,11 @@ function ZodiacWheel({ rotation, selectedIdx, hoveredIdx, onSelect, onHover, siz
             </g>
           );
         })}
-
         <circle cx={cx} cy={cy} r={innerR - 10 * scale} fill="url(#wOrbGrad)" stroke="rgba(139,92,246,0.25)" strokeWidth="1.5" />
         <circle cx={cx} cy={cy} r={innerR - 18 * scale} fill="none" stroke="rgba(139,92,246,0.10)" strokeWidth="0.5" />
-        <text x={cx} y={cy + 2}        textAnchor="middle" dominantBaseline="middle" fontSize={`${28 * scale}`} fill="#e9d5ff" fontFamily="serif" style={{ filter: "drop-shadow(0 0 14px rgba(167,139,250,0.9))" }}>✦</text>
+        <text x={cx} y={cy + 2}          textAnchor="middle" dominantBaseline="middle" fontSize={`${28 * scale}`} fill="#e9d5ff" fontFamily="serif" style={{ filter: "drop-shadow(0 0 14px rgba(167,139,250,0.9))" }}>✦</text>
         <text x={cx} y={cy + 26 * scale} textAnchor="middle" dominantBaseline="middle" fontSize={`${7 * scale}`}  fill="#5b21b6" fontFamily="'Cinzel',serif" letterSpacing="2">ASTROCALL</text>
       </svg>
-
       <div style={{ height: 28, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
         {(hoveredIdx !== null || selectedIdx !== null) && (() => {
           const z = ZODIAC[hoveredIdx ?? selectedIdx!];
@@ -187,17 +344,17 @@ function ZodiacWheel({ rotation, selectedIdx, hoveredIdx, onSelect, onHover, siz
 /* ─── Reading Panel ── */
 function ReadingPanel({ sign, onClose }: { sign: ZodiacSign; onClose: () => void }) {
   const [activeType, setActiveType] = useState<ReadingTypeId>("daily");
-  const [reading, setReading] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [luckyInfo, setLuckyInfo] = useState<string[]>([]);
+  const [reading, setReading]       = useState("");
+  const [loading, setLoading]       = useState(false);
+  const [luckyInfo, setLuckyInfo]   = useState<string[]>([]);
 
   const fetchReading = useCallback(async (type: ReadingTypeId) => {
     setLoading(true); setReading(""); setLuckyInfo([]);
     try {
-      const res = await fetch("/api/horoscope", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ signName: sign.name, readingType: type }) });
+      const res  = await fetch("/api/horoscope", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ signName: sign.name, readingType: type }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed");
-      const text = (data.text as string) ?? "";
+      const text  = (data.text as string) ?? "";
       const match = text.match(/LUCKY:\s*(.+)/);
       if (match) setLuckyInfo(match[1].split("|").map((s: string) => s.trim()));
       setReading(text.replace(/LUCKY:.*$/m, "").trim());
@@ -209,13 +366,11 @@ function ReadingPanel({ sign, onClose }: { sign: ZodiacSign; onClose: () => void
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, background: "linear-gradient(160deg,rgba(20,8,50,0.97) 0%,rgba(8,2,22,0.99) 100%)", borderLeft: `1px solid ${sign.color}20`, animation: "slideIn 0.35s cubic-bezier(0.16,1,0.3,1) both" }}>
-
-      {/* Header */}
       <div style={{ padding: "1rem 1.25rem", borderBottom: "1px solid rgba(139,92,246,0.10)", background: `linear-gradient(135deg,${sign.color}08 0%,transparent 55%)`, display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0 }}>
           <div style={{ width: 44, height: 44, borderRadius: "50%", background: `radial-gradient(circle,${sign.color}30,${sign.color}08)`, border: `1.5px solid ${sign.color}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.4rem", boxShadow: `0 0 20px ${sign.color}28`, flexShrink: 0 }}>{sign.symbol}</div>
           <div style={{ minWidth: 0 }}>
-            <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: "clamp(1rem,3vw,1.25rem)", color: sign.color, fontWeight: 700, margin: 0, lineHeight: 1, filter: `drop-shadow(0 0 8px ${sign.color}50)` }}>{sign.name}</h2>
+            <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: "clamp(1rem,3vw,1.25rem)", color: sign.color, fontWeight: 700, margin: 0, lineHeight: 1 }}>{sign.name}</h2>
             <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.3rem", alignItems: "center", flexWrap: "wrap" }}>
               <span style={{ fontFamily: "Georgia,serif", fontSize: "0.7rem", color: "#6b7280", fontStyle: "italic" }}>{sign.dates}</span>
               <span style={{ color: "#2d1d45", fontSize: "0.6rem" }}>•</span>
@@ -228,8 +383,6 @@ function ReadingPanel({ sign, onClose }: { sign: ZodiacSign; onClose: () => void
         </div>
         <button onClick={onClose} style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.18)", color: "#6b7280", cursor: "pointer", borderRadius: "8px", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem", flexShrink: 0, marginLeft: 8 }}>×</button>
       </div>
-
-      {/* Reading type tabs — scrollable on mobile */}
       <div style={{ display: "flex", gap: "0.4rem", padding: "0.75rem 1rem", borderBottom: "1px solid rgba(139,92,246,0.07)", flexShrink: 0, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         {READING_TYPES.map(rt => (
           <button key={rt.id} onClick={() => setActiveType(rt.id)} style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontFamily: "'Cinzel',serif", fontSize: "0.6rem", letterSpacing: "0.06em", padding: "0.38rem 0.75rem", borderRadius: "8px", cursor: "pointer", border: activeType === rt.id ? `1px solid ${sign.color}60` : "1px solid rgba(139,92,246,0.14)", background: activeType === rt.id ? sign.color + "16" : "transparent", color: activeType === rt.id ? sign.color : "#6b7280", transition: "all 0.18s ease", flexShrink: 0, whiteSpace: "nowrap" }}>
@@ -237,9 +390,7 @@ function ReadingPanel({ sign, onClose }: { sign: ZodiacSign; onClose: () => void
           </button>
         ))}
       </div>
-
-      {/* Reading content */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "1.25rem 1.25rem" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "1.25rem" }}>
         {loading ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: "1rem" }}>
             <div style={{ fontSize: "2.2rem", animation: "spinStar 3s linear infinite" }}>✦</div>
@@ -255,7 +406,7 @@ function ReadingPanel({ sign, onClose }: { sign: ZodiacSign; onClose: () => void
                 {luckyInfo.slice(0, 3).map((val, i) => (
                   <div key={i} style={{ background: `linear-gradient(145deg,${sign.color}0c,${sign.color}04)`, border: `1px solid ${sign.color}20`, borderRadius: "10px", padding: "0.75rem 0.5rem", textAlign: "center" }}>
                     <div style={{ fontFamily: "'Cinzel',serif", fontSize: "0.52rem", color: "#4b5563", letterSpacing: "0.1em", marginBottom: "0.4rem", textTransform: "uppercase" }}>{LUCKY_LABELS[activeType][i]}</div>
-                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: "0.82rem", color: sign.color, fontWeight: 700, filter: `drop-shadow(0 0 4px ${sign.color}50)` }}>{val}</div>
+                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: "0.82rem", color: sign.color, fontWeight: 700 }}>{val}</div>
                   </div>
                 ))}
               </div>
@@ -263,8 +414,6 @@ function ReadingPanel({ sign, onClose }: { sign: ZodiacSign; onClose: () => void
           </>
         )}
       </div>
-
-      {/* Footer */}
       <div style={{ padding: "0.75rem 1.25rem", borderTop: "1px solid rgba(139,92,246,0.07)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
         <span style={{ fontFamily: "Georgia,serif", fontSize: "0.68rem", color: "#374151", fontStyle: "italic" }}>✦ Powered by Vedic wisdom</span>
         <button onClick={() => fetchReading(activeType)} style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontFamily: "'Cinzel',serif", fontSize: "0.6rem", letterSpacing: "0.08em", color: sign.color, background: sign.color + "10", border: `1px solid ${sign.color}28`, borderRadius: "8px", padding: "0.38rem 0.75rem", cursor: "pointer", whiteSpace: "nowrap" }}>↻ New Reading</button>
@@ -275,11 +424,11 @@ function ReadingPanel({ sign, onClose }: { sign: ZodiacSign; onClose: () => void
 
 /* ─── HomePage ── */
 export default function HomePage() {
-  const [rotation, setRotation]     = useState(0);
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [rotation,    setRotation]    = useState(0);
+  const [hoveredIdx,  setHoveredIdx]  = useState<number | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
-  const [scrollY, setScrollY]       = useState(0);
-  const [wheelSize, setWheelSize]   = useState(400);
+  const [scrollY,     setScrollY]     = useState(0);
+  const [wheelSize,   setWheelSize]   = useState(400);
   const rotRef  = useRef(0);
   const rafRef  = useRef<number>(0);
   const lastRef = useRef<number | null>(null);
@@ -290,7 +439,6 @@ export default function HomePage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Responsive wheel size
   useEffect(() => {
     const update = () => {
       const w = window.innerWidth;
@@ -319,10 +467,10 @@ export default function HomePage() {
   const handleClose  = () => setSelectedIdx(null);
 
   const features = [
-    { icon: <Award  size={28} color="#f59e0b" />, title: "Certified Vedic Masters",  desc: "Rigorously verified astrologers with decades of Vedic study. No shortcuts.",        accent: "#f59e0b" },
-    { icon: <Video  size={28} color="#818cf8" />, title: "HD Video Consultations",   desc: "Private, encrypted sessions powered by enterprise-grade streaming.",                 accent: "#818cf8" },
-    { icon: <Zap    size={28} color="#34d399" />, title: "Instant Availability",     desc: "See who's online right now. Ancient wisdom on modern time — no waiting.",            accent: "#34d399" },
-    { icon: <Shield size={28} color="#f87171" />, title: "100% Confidential",        desc: "All sessions encrypted, never stored. What the stars reveal stays with you.",        accent: "#f87171" },
+    { icon: <Award  size={28} color="#f59e0b" />, title: "Certified Vedic Masters",  desc: "Rigorously verified astrologers with decades of Vedic study. No shortcuts.",       accent: "#f59e0b" },
+    { icon: <Video  size={28} color="#818cf8" />, title: "HD Video Consultations",   desc: "Private, encrypted sessions powered by enterprise-grade streaming.",                accent: "#818cf8" },
+    { icon: <Zap    size={28} color="#34d399" />, title: "Instant Availability",     desc: "See who's online right now. Ancient wisdom on modern time — no waiting.",           accent: "#34d399" },
+    { icon: <Shield size={28} color="#f87171" />, title: "100% Confidential",        desc: "All sessions encrypted, never stored. What the stars reveal stays with you.",       accent: "#f87171" },
   ];
 
   return (
@@ -332,16 +480,14 @@ export default function HomePage() {
       {/* Nebula glows */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse 60% 55% at 10% 50%,rgba(60,0,120,0.18) 0%,transparent 100%),radial-gradient(ellipse 50% 45% at 90% 15%,rgba(80,0,160,0.14) 0%,transparent 100%),radial-gradient(ellipse 40% 40% at 80% 80%,rgba(40,0,90,0.10) 0%,transparent 100%)" }} />
 
-      <div style={{ position: "relative", zIndex: 50 }}><Navbar /></div>
+      <CosmicNavbar scrollY={scrollY} />
 
       {/* ── HERO ── */}
       <section style={{ position: "relative", zIndex: 2, minHeight: "100vh", display: "flex", alignItems: "center", padding: "2rem 1rem 4rem" }}>
         <div style={{ maxWidth: 1180, width: "100%", margin: "0 auto", position: "relative", zIndex: 10 }}>
-
-          {/* Two-column on desktop, stacked on mobile */}
           <div className="hero-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "3rem", alignItems: "center", marginBottom: "2rem" }}>
 
-            {/* Left – copy */}
+            {/* Left copy */}
             <div style={{ animation: "fadeUp 0.9s ease both", marginTop: "5rem" }}>
               <h1 style={{ fontFamily: "'Cinzel',serif", fontWeight: 900, lineHeight: 1.05, marginBottom: "1.4rem" }}>
                 <span style={{ display: "block", fontSize: "clamp(2rem,7vw,5.2rem)", color: "#f5f0ff", letterSpacing: "-0.01em" }}>THE COSMOS</span>
@@ -350,7 +496,6 @@ export default function HomePage() {
               <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(1rem,2.5vw,1.18rem)", color: "#a78bfa", lineHeight: 1.75, marginBottom: "1.8rem", maxWidth: 460, fontStyle: "italic" }}>
                 Traverse the endless void where planets align and destinies are written. Connect face-to-face with certified Vedic masters.
               </p>
-
               <div style={{ display: "flex", gap: "0.85rem", flexWrap: "wrap", marginBottom: "2.5rem" }}>
                 <Link href="/astrologers" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", fontFamily: "'Cinzel',serif", fontSize: "0.72rem", letterSpacing: "0.12em", fontWeight: 800, color: "#0a0415", background: "linear-gradient(110deg,#f59e0b,#d97706)", padding: "0.9rem 1.6rem", borderRadius: "10px", textDecoration: "none", boxShadow: "0 4px 24px rgba(245,158,11,0.4)", animation: "pulseBtn 3s ease infinite" }}>
                   <Sparkles size={14} /> FIND ASTROLOGERS
@@ -359,7 +504,6 @@ export default function HomePage() {
                   BEGIN JOURNEY <ChevronRight size={13} />
                 </Link>
               </div>
-
               <div style={{ display: "flex", gap: "1.8rem", paddingTop: "1.8rem", borderTop: "1px solid rgba(139,92,246,0.15)", flexWrap: "wrap" }}>
                 {[{ n: "500+", l: "Verified Astrologers" }, { n: "50K+", l: "Sessions Completed" }, { n: "4.9★", l: "Average Rating" }].map((b, i) => (
                   <div key={i}>
@@ -370,7 +514,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right – Zodiac Wheel */}
+            {/* Right wheel */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", animation: "fadeUp 0.9s ease 0.2s both", position: "relative", zIndex: 10 }}>
               <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "120%", height: "120%", background: "radial-gradient(circle,rgba(88,28,220,0.18) 0%,transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
               <div style={{ position: "relative", zIndex: 2 }}>
@@ -379,11 +523,9 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Reading panel */}
           {selectedIdx !== null && (
             <div style={{ animation: "fadeUp 0.35s ease both" }}>
               <div className="reading-panel-wrapper" style={{ display: "flex", background: "linear-gradient(145deg,rgba(15,5,40,0.97) 0%,rgba(6,2,18,0.99) 100%)", border: "1px solid rgba(109,40,217,0.22)", borderRadius: 20, boxShadow: "0 0 80px rgba(109,40,217,0.08),0 20px 60px rgba(0,0,0,0.7)", overflow: "hidden", minHeight: 360, maxHeight: "80vh" }}>
-                {/* Sign selector sidebar — hidden on very small screens */}
                 <div className="sign-sidebar" style={{ width: 52, background: "rgba(8,3,20,0.6)", borderRight: "1px solid rgba(109,40,217,0.12)", display: "flex", flexDirection: "column", alignItems: "center", padding: "0.75rem 0", gap: "0.2rem", overflowY: "auto", flexShrink: 0 }}>
                   {ZODIAC.map((z, i) => (
                     <button key={i} onClick={() => handleSelect(i)} title={z.name} style={{ width: 36, height: 36, borderRadius: "50%", border: selectedIdx === i ? `1.5px solid ${z.color}aa` : "1px solid transparent", background: selectedIdx === i ? z.color + "18" : "transparent", color: selectedIdx === i ? z.color : "#4b5563", fontSize: "1rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "serif", transition: "all 0.15s", flexShrink: 0 }}>{z.symbol}</button>
@@ -394,7 +536,6 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Quick-jump zodiac pills */}
           {selectedIdx === null && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.45rem", justifyContent: "center", marginTop: "1rem", animation: "fadeUp 0.9s ease 0.4s both" }}>
               <span style={{ fontFamily: "Georgia,serif", fontSize: "0.72rem", color: "#374151", fontStyle: "italic", display: "flex", alignItems: "center", marginRight: "0.3rem" }}>Or jump to:</span>
@@ -420,12 +561,9 @@ export default function HomePage() {
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: "3rem" }}>
             <div style={{ fontFamily: "'Cinzel',serif", fontSize: "0.62rem", letterSpacing: "0.4em", color: "#f59e0b", marginBottom: "0.8rem", fontWeight: 600 }}>✦ WHY ASTROCALL ✦</div>
-            <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: "clamp(1.5rem,4vw,2.2rem)", fontWeight: 700, color: "#f5f0ff", marginBottom: "0.8rem" }}>
-              Written in the <span style={{ background: "linear-gradient(110deg,#c084fc,#7c3aed)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Stars</span>
-            </h2>
+            <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: "clamp(1.5rem,4vw,2.2rem)", fontWeight: 700, color: "#f5f0ff", marginBottom: "0.8rem" }}>Written in the <span style={{ background: "linear-gradient(110deg,#c084fc,#7c3aed)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Stars</span></h2>
             <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(0.95rem,2vw,1.1rem)", color: "#9ca3af", maxWidth: 500, margin: "0 auto", fontStyle: "italic" }}>India&apos;s most trusted platform for live Vedic astrology consultations</p>
           </div>
-
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: "1.25rem" }}>
             {features.map((f, i) => (
               <div key={i} className="feature-card" style={{ background: "rgba(15,5,25,0.7)", border: `1px solid ${f.accent}22`, borderRadius: "16px", padding: "1.75rem 1.25rem", backdropFilter: "blur(16px)", boxShadow: `0 8px 32px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.03)`, transition: "transform 0.3s ease,box-shadow 0.3s ease" }}>
@@ -480,9 +618,7 @@ export default function HomePage() {
       <section style={{ position: "relative", zIndex: 2, paddingBottom: 0, background: "rgba(13,4,30,0.4)" }}>
         <div style={{ position: "relative", width: "100%", height: "clamp(320px,50vw,480px)", overflowX: "hidden" }}>
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,#0d041e 0%,#1a0535 35%,#3b0764 70%,#5b0f8a 100%)" }} />
-
           <div style={{ position: "absolute", bottom: "120px", right: "8%", width: "clamp(100px,18vw,220px)", height: "clamp(100px,18vw,220px)", background: "radial-gradient(circle at 40% 35%,#2e0e52,#0d041e)", borderRadius: "50%", boxShadow: "0 0 60px rgba(139,92,246,0.15)", opacity: 0.9 }} />
-
           <div style={{ position: "absolute", top: "8%", right: "28%", animation: "floatShip 7s ease-in-out infinite" }}>
             <svg width="45" height="17" viewBox="0 0 55 20" fill="none" style={{ filter: "drop-shadow(0 0 5px rgba(245,158,11,0.5))", opacity: 0.8 }}>
               <ellipse cx="27" cy="11" rx="25" ry="6" fill="#1c0a3a" stroke="rgba(245,158,11,0.4)" strokeWidth="0.8" />
@@ -490,7 +626,6 @@ export default function HomePage() {
               <ellipse cx="27" cy="7"  rx="7"  ry="5" fill="#4c1d95" />
             </svg>
           </div>
-
           <svg viewBox="0 0 1440 340" preserveAspectRatio="none" style={{ position: "absolute", bottom: 0, left: 0, width: "100%", height: "clamp(180px,40vw,340px)" }}>
             <path d="M0,340 L0,200 L80,140 L160,200 L240,120 L360,180 L440,100 L560,170 L680,90 L800,160 L900,80 L1020,150 L1140,70 L1260,140 L1380,80 L1440,130 L1440,340 Z" fill="#1a0535" />
             <path d="M0,340 L0,240 L60,190 L140,260 L220,180 L320,240 L420,160 L500,230 L600,155 L700,230 L800,160 L920,245 L1040,165 L1160,240 L1280,160 L1380,220 L1440,170 L1440,340 Z" fill="#12022e" />
@@ -506,20 +641,15 @@ export default function HomePage() {
             <line x1="720" y1="227" x2="700" y2="218" stroke="rgba(139,92,246,0.4)" strokeWidth="1.5" />
             <rect x="0" y="320" width="1440" height="20" fill="#06000f" />
           </svg>
-
           <div style={{ position: "absolute", top: "1.5rem", left: 0, right: 0, textAlign: "center", zIndex: 5, padding: "0 1.5rem" }}>
             <div style={{ fontSize: "1.8rem", marginBottom: "0.5rem", filter: "drop-shadow(0 0 18px rgba(180,100,255,0.7))", animation: "floatShip 4s ease-in-out infinite" }}>🔮</div>
             <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: "clamp(1.2rem,3.5vw,2rem)", color: "#f5f0ff", fontWeight: 700, marginBottom: "0.5rem" }}>Your Stars Are Aligned</h2>
-            <p style={{ fontFamily: "'Cormorant Garamond',serif", color: "#a78bfa", fontSize: "clamp(0.9rem,2vw,1.05rem)", marginBottom: "1.4rem", maxWidth: "400px", margin: "0 auto 1.4rem", lineHeight: 1.6 }}>
-              Over 50,000 seekers have found clarity through AstroCall.
-            </p>
+            <p style={{ fontFamily: "'Cormorant Garamond',serif", color: "#a78bfa", fontSize: "clamp(0.9rem,2vw,1.05rem)", marginBottom: "1.4rem", maxWidth: "400px", margin: "0 auto 1.4rem", lineHeight: 1.6 }}>Over 50,000 seekers have found clarity through AstroCall.</p>
             <Link href="/astrologers" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", fontFamily: "'Cinzel',serif", fontSize: "0.75rem", letterSpacing: "0.1em", fontWeight: 800, color: "#0a0415", background: "linear-gradient(110deg,#f59e0b,#d97706)", padding: "0.9rem 1.8rem", borderRadius: "10px", textDecoration: "none", boxShadow: "0 4px 28px rgba(245,158,11,0.45)", animation: "pulseBtn 3s ease infinite" }}>
               <Phone size={14} /> BROWSE ASTROLOGERS
             </Link>
           </div>
         </div>
-
-        {/* Footer strip */}
         <div style={{ background: "#06000f", borderTop: "1px solid rgba(139,92,246,0.12)", padding: "1rem 1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
           <p style={{ fontFamily: "'Cormorant Garamond',serif", color: "#374151", fontSize: "0.82rem", fontStyle: "italic", margin: 0 }}>✦ AstroCall © {new Date().getFullYear()} · Crafted under the cosmic sky ✦</p>
           <div style={{ display: "flex", gap: "1.25rem", flexWrap: "wrap" }}>
@@ -536,52 +666,53 @@ export default function HomePage() {
         @keyframes fadeUp    { from{opacity:0;transform:translateY(26px);}  to{opacity:1;transform:translateY(0);} }
         @keyframes slideIn   { from{opacity:0;transform:translateX(28px);}  to{opacity:1;transform:translateX(0);} }
         @keyframes spinStar  { to{transform:rotate(360deg);} }
-        @keyframes pulseRing { 0%,100%{opacity:0.3;}  50%{opacity:0.65;} }
+        @keyframes pulseRing { 0%,100%{opacity:0.3;} 50%{opacity:0.65;} }
         @keyframes floatShip { 0%,100%{transform:translateY(0) rotate(-2deg);} 50%{transform:translateY(-10px) rotate(1deg);} }
         @keyframes pulseBtn  { 0%,100%{box-shadow:0 4px 24px rgba(245,158,11,0.40);} 50%{box-shadow:0 4px 40px rgba(245,158,11,0.70),0 0 0 6px rgba(245,158,11,0.08);} }
 
-        *{box-sizing:border-box;}
-        ::-webkit-scrollbar{width:4px;}
-        ::-webkit-scrollbar-track{background:transparent;}
-        ::-webkit-scrollbar-thumb{background:rgba(109,40,217,0.3);border-radius:2px;}
-        button{transition:opacity 0.15s ease,transform 0.15s ease;}
-        button:hover{opacity:0.85;}
-        a:hover{filter:brightness(1.12);}
+        *{ box-sizing:border-box; }
+        ::-webkit-scrollbar{ width:4px; }
+        ::-webkit-scrollbar-track{ background:transparent; }
+        ::-webkit-scrollbar-thumb{ background:rgba(109,40,217,0.3); border-radius:2px; }
+        button{ transition:opacity 0.15s ease,transform 0.15s ease; }
+        button:hover{ opacity:0.85; }
+        a:hover{ filter:brightness(1.12); }
 
-        /* Hero: 2-col on md+, 1-col (wheel first) on mobile */
-        .hero-grid {
-          grid-template-columns: 1fr 1fr;
-        }
-        @media(max-width:768px) {
-          .hero-grid {
-            grid-template-columns: 1fr !important;
-            gap: 1.5rem !important;
-          }
-          /* Show wheel first, then copy below on mobile */
-          .hero-grid > *:first-child { order: 2; margin-top: 0 !important; }
-          .hero-grid > *:last-child  { order: 1; }
-        }
+        /* Desktop nav */
+        .nav-links-desktop{ display:flex; }
+        .nav-auth-desktop { display:flex; }
+        .nav-hamburger    { display:none !important; }
 
-        /* Hide heavy planets on small screens for perf */
-        @media(max-width:640px) {
-          .planet-saturn, .planet-gas, .planet-comet { display: none !important; }
-          .planet-moon { opacity: 0.35 !important; width: 80px !important; height: 80px !important; right: 10px !important; }
-        }
-
-        /* Reading panel: hide sign sidebar on mobile */
-        @media(max-width:480px) {
-          .sign-sidebar { display: none !important; }
-          .reading-panel-wrapper { border-radius: 14px !important; }
-        }
-
-        /* Feature card hover */
-        .feature-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 16px 48px rgba(0,0,0,0.6),0 0 30px rgba(139,92,246,0.10);
-        }
+        /* Mobile nav */
         @media(max-width:640px){
-          .feature-card:hover { transform: none; }
+          .nav-links-desktop{ display:none !important; }
+          .nav-auth-desktop { display:none !important; }
+          .nav-hamburger    { display:flex !important; }
         }
+
+        /* Hero grid */
+        .hero-grid{ grid-template-columns:1fr 1fr; }
+        @media(max-width:768px){
+          .hero-grid{ grid-template-columns:1fr !important; gap:1.5rem !important; }
+          .hero-grid>*:first-child{ order:2; margin-top:0 !important; }
+          .hero-grid>*:last-child { order:1; }
+        }
+
+        /* Planets */
+        @media(max-width:640px){
+          .planet-saturn,.planet-gas,.planet-comet,.planet-comet2,.planet-small,.planet-ice{ display:none !important; }
+          .planet-moon{ opacity:0.35 !important; width:80px !important; height:80px !important; right:10px !important; }
+        }
+
+        /* Reading panel */
+        @media(max-width:480px){
+          .sign-sidebar{ display:none !important; }
+          .reading-panel-wrapper{ border-radius:14px !important; }
+        }
+
+        /* Feature cards */
+        .feature-card:hover{ transform:translateY(-5px); box-shadow:0 16px 48px rgba(0,0,0,0.6),0 0 30px rgba(139,92,246,0.10); }
+        @media(max-width:640px){ .feature-card:hover{ transform:none; } }
       `}</style>
     </div>
   );
