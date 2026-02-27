@@ -21,7 +21,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           {children}
           <GlobalCallAlert />
-          <MobileBlocker />
         </AuthProvider>
       </body>
     </html>
