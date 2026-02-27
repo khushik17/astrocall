@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { Sparkles, ChevronRight, Phone, Award, Video, Zap, Shield, Menu, X as XIcon } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Sparkles, ChevronRight, Phone, Award, Video, Zap, Shield, Menu, X as XIcon, LogOut, LayoutDashboard, Users, ChevronDown } from "lucide-react";
 
 interface ZodiacSign {
   symbol: string; name: string; dates: string; color: string;
@@ -9,39 +10,68 @@ interface ZodiacSign {
 }
 
 const ZODIAC: ZodiacSign[] = [
-  { symbol: "♈", name: "Aries",       dates: "Mar 21 – Apr 19", color: "#ff6b6b", element: "Fire",  ruling: "Mars",    traits: ["Bold","Passionate","Driven"] },
-  { symbol: "♉", name: "Taurus",      dates: "Apr 20 – May 20", color: "#6ee7b7", element: "Earth", ruling: "Venus",   traits: ["Loyal","Patient","Grounded"] },
-  { symbol: "♊", name: "Gemini",      dates: "May 21 – Jun 20", color: "#fde68a", element: "Air",   ruling: "Mercury", traits: ["Curious","Witty","Adaptable"] },
-  { symbol: "♋", name: "Cancer",      dates: "Jun 21 – Jul 22", color: "#c4b5fd", element: "Water", ruling: "Moon",    traits: ["Intuitive","Caring","Sensitive"] },
-  { symbol: "♌", name: "Leo",         dates: "Jul 23 – Aug 22", color: "#fbbf24", element: "Fire",  ruling: "Sun",     traits: ["Charismatic","Creative","Generous"] },
-  { symbol: "♍", name: "Virgo",       dates: "Aug 23 – Sep 22", color: "#86efac", element: "Earth", ruling: "Mercury", traits: ["Analytical","Precise","Helpful"] },
-  { symbol: "♎", name: "Libra",       dates: "Sep 23 – Oct 22", color: "#fb923c", element: "Air",   ruling: "Venus",   traits: ["Balanced","Charming","Fair"] },
-  { symbol: "♏", name: "Scorpio",     dates: "Oct 23 – Nov 21", color: "#f87171", element: "Water", ruling: "Pluto",   traits: ["Intense","Mysterious","Powerful"] },
-  { symbol: "♐", name: "Sagittarius", dates: "Nov 22 – Dec 21", color: "#a78bfa", element: "Fire",  ruling: "Jupiter", traits: ["Free","Optimistic","Adventurous"] },
-  { symbol: "♑", name: "Capricorn",   dates: "Dec 22 – Jan 19", color: "#67e8f9", element: "Earth", ruling: "Saturn",  traits: ["Ambitious","Disciplined","Wise"] },
-  { symbol: "♒", name: "Aquarius",    dates: "Jan 20 – Feb 18", color: "#818cf8", element: "Air",   ruling: "Uranus",  traits: ["Innovative","Humanitarian","Unique"] },
-  { symbol: "♓", name: "Pisces",      dates: "Feb 19 – Mar 20", color: "#34d399", element: "Water", ruling: "Neptune", traits: ["Dreamy","Compassionate","Artistic"] },
+  { symbol: "♈", name: "Aries", dates: "Mar 21 – Apr 19", color: "#ff6b6b", element: "Fire", ruling: "Mars", traits: ["Bold", "Passionate", "Driven"] },
+  { symbol: "♉", name: "Taurus", dates: "Apr 20 – May 20", color: "#6ee7b7", element: "Earth", ruling: "Venus", traits: ["Loyal", "Patient", "Grounded"] },
+  { symbol: "♊", name: "Gemini", dates: "May 21 – Jun 20", color: "#fde68a", element: "Air", ruling: "Mercury", traits: ["Curious", "Witty", "Adaptable"] },
+  { symbol: "♋", name: "Cancer", dates: "Jun 21 – Jul 22", color: "#c4b5fd", element: "Water", ruling: "Moon", traits: ["Intuitive", "Caring", "Sensitive"] },
+  { symbol: "♌", name: "Leo", dates: "Jul 23 – Aug 22", color: "#fbbf24", element: "Fire", ruling: "Sun", traits: ["Charismatic", "Creative", "Generous"] },
+  { symbol: "♍", name: "Virgo", dates: "Aug 23 – Sep 22", color: "#86efac", element: "Earth", ruling: "Mercury", traits: ["Analytical", "Precise", "Helpful"] },
+  { symbol: "♎", name: "Libra", dates: "Sep 23 – Oct 22", color: "#fb923c", element: "Air", ruling: "Venus", traits: ["Balanced", "Charming", "Fair"] },
+  { symbol: "♏", name: "Scorpio", dates: "Oct 23 – Nov 21", color: "#f87171", element: "Water", ruling: "Pluto", traits: ["Intense", "Mysterious", "Powerful"] },
+  { symbol: "♐", name: "Sagittarius", dates: "Nov 22 – Dec 21", color: "#a78bfa", element: "Fire", ruling: "Jupiter", traits: ["Free", "Optimistic", "Adventurous"] },
+  { symbol: "♑", name: "Capricorn", dates: "Dec 22 – Jan 19", color: "#67e8f9", element: "Earth", ruling: "Saturn", traits: ["Ambitious", "Disciplined", "Wise"] },
+  { symbol: "♒", name: "Aquarius", dates: "Jan 20 – Feb 18", color: "#818cf8", element: "Air", ruling: "Uranus", traits: ["Innovative", "Humanitarian", "Unique"] },
+  { symbol: "♓", name: "Pisces", dates: "Feb 19 – Mar 20", color: "#34d399", element: "Water", ruling: "Neptune", traits: ["Dreamy", "Compassionate", "Artistic"] },
 ];
 
 const READING_TYPES = [
-  { id: "daily",    label: "Today's Reading",  icon: "☀️" },
-  { id: "love",     label: "Love & Relations", icon: "💕" },
-  { id: "career",   label: "Career & Wealth",  icon: "💼" },
-  { id: "spiritual",label: "Spiritual Path",   icon: "🔮" },
+  { id: "daily", label: "Today's Reading", icon: "☀️" },
+  { id: "love", label: "Love & Relations", icon: "💕" },
+  { id: "career", label: "Career & Wealth", icon: "💼" },
+  { id: "spiritual", label: "Spiritual Path", icon: "🔮" },
 ] as const;
 type ReadingTypeId = typeof READING_TYPES[number]["id"];
 
 const LUCKY_LABELS: Record<ReadingTypeId, [string, string, string]> = {
-  daily:    ["Lucky Number", "Lucky Color",  "Lucky Time"],
-  love:     ["Best Match",   "Love Tip",     "Peak Day"],
-  career:   ["Power Number", "Power Day",    "Mantra"],
-  spiritual:["Sacred Crystal","Mantra Word", "Focus Chakra"],
+  daily: ["Lucky Number", "Lucky Color", "Lucky Time"],
+  love: ["Best Match", "Love Tip", "Peak Day"],
+  career: ["Power Number", "Power Day", "Mantra"],
+  spiritual: ["Sacred Crystal", "Mantra Word", "Focus Chakra"],
 };
 
 /* ─── Inline Navbar ── */
 function CosmicNavbar({ scrollY }: { scrollY: number }) {
+  const { user, profile, logout, loading } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const scrolled = scrollY > 20;
+
+  const dashLink =
+    profile?.role === "astrologer" ? "/dashboard/astrologer" :
+      profile?.role === "admin" ? "/admin" : "/dashboard/user";
+
+  const getDisplayName = () => {
+    if (!profile) return "User";
+    const rawName = profile.displayName || profile.email?.split("@")[0];
+    return rawName ? rawName.split(" ")[0] : "User";
+  };
+
+  const getInitials = () => {
+    if (!profile) return "U";
+    const rawName = profile.displayName || profile.email;
+    return rawName ? rawName.charAt(0).toUpperCase() : "U";
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <>
@@ -51,8 +81,8 @@ function CosmicNavbar({ scrollY }: { scrollY: number }) {
         transition: "height 0.4s cubic-bezier(0.4,0,0.2,1), background 0.4s ease, backdrop-filter 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease",
         background: scrolled ? "rgba(6,2,18,0.92)" : "linear-gradient(180deg,rgba(6,2,18,0.65) 0%,transparent 100%)",
         backdropFilter: scrolled ? "blur(20px)" : "blur(0px)",
-        borderBottom: scrolled ? "1px solid rgba(109,40,217,0.18)" : "1px solid transparent",
-        boxShadow: scrolled ? "0 4px 32px rgba(0,0,0,0.4)" : "none",
+        borderBottom: "none",
+        boxShadow: scrolled ? "0 4px 32px rgba(0,0,0,0.4), 0 1px 0 rgba(109,40,217,0.18)" : "none",
         display: "flex", alignItems: "center",
         padding: "0 clamp(1rem,4vw,2.5rem)",
       }}>
@@ -75,37 +105,111 @@ function CosmicNavbar({ scrollY }: { scrollY: number }) {
 
         {/* Centre nav links — desktop */}
         <div className="nav-links-desktop" style={{ flex: 1, display: "flex", justifyContent: "center", gap: "clamp(1rem,3vw,2.5rem)" }}>
-          {[["Astrologers","/astrologers"],["Horoscopes","/horoscopes"],["About","/about"]].map(([label,href]) => (
+          {[["Astrologers", "/astrologers"]].map(([label, href]) => (
             <Link key={href} href={href} style={{ fontFamily: "'Cinzel',serif", fontSize: "0.6rem", letterSpacing: "0.14em", color: "#9ca3af", textDecoration: "none", transition: "color 0.2s ease" }}
               onMouseEnter={e => (e.currentTarget.style.color = "#e9d5ff")}
               onMouseLeave={e => (e.currentTarget.style.color = "#9ca3af")}
             >{label.toUpperCase()}</Link>
           ))}
+          {user && (
+            <Link href={dashLink} style={{ fontFamily: "'Cinzel',serif", fontSize: "0.6rem", letterSpacing: "0.14em", color: "#c4b5fd", textDecoration: "none", transition: "color 0.2s ease" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "#ffffff")}
+              onMouseLeave={e => (e.currentTarget.style.color = "#c4b5fd")}
+            >DASHBOARD</Link>
+          )}
         </div>
 
         {/* Right — auth buttons desktop */}
-        <div className="nav-auth-desktop" style={{ display: "flex", alignItems: "center", gap: "0.55rem", flexShrink: 0 }}>
-          <Link href="/auth/login" style={{
-            fontFamily: "'Cinzel',serif", fontSize: "0.6rem", letterSpacing: "0.12em",
-            color: "#c4b5fd", textDecoration: "none",
-            padding: "0.42rem 0.95rem", borderRadius: "8px",
-            border: "1px solid rgba(139,92,246,0.25)", background: "transparent",
-            transition: "border-color 0.2s,color 0.2s,background 0.2s",
-          }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(139,92,246,0.55)"; e.currentTarget.style.background = "rgba(109,40,217,0.12)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(139,92,246,0.25)"; e.currentTarget.style.background = "transparent"; }}
-          >SIGN IN</Link>
-          <Link href="/auth/register" style={{
-            fontFamily: "'Cinzel',serif", fontSize: "0.6rem", letterSpacing: "0.12em",
-            color: "#0a0415", textDecoration: "none",
-            padding: "0.42rem 1rem", borderRadius: "8px",
-            background: "linear-gradient(110deg,#f59e0b,#d97706)",
-            fontWeight: 700, boxShadow: "0 2px 12px rgba(245,158,11,0.35)",
-            transition: "box-shadow 0.2s,transform 0.2s",
-          }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(245,158,11,0.55)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-            onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 2px 12px rgba(245,158,11,0.35)"; e.currentTarget.style.transform = "translateY(0)"; }}
-          >GET STARTED</Link>
+        <div className="nav-auth-desktop" style={{ display: "flex", alignItems: "center", gap: "0.55rem", flexShrink: 0, minHeight: "32px" }}>
+          {loading ? null : !user ? (
+            <>
+              <Link href="/auth/login" style={{
+                fontFamily: "'Cinzel',serif", fontSize: "0.6rem", letterSpacing: "0.12em",
+                color: "#c4b5fd", textDecoration: "none",
+                padding: "0.42rem 0.95rem", borderRadius: "8px",
+                border: "1px solid rgba(139,92,246,0.25)", background: "transparent",
+                transition: "border-color 0.2s,color 0.2s,background 0.2s",
+              }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(139,92,246,0.55)"; e.currentTarget.style.background = "rgba(109,40,217,0.12)"; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(139,92,246,0.25)"; e.currentTarget.style.background = "transparent"; }}
+              >SIGN IN</Link>
+              <Link href="/auth/register" style={{
+                fontFamily: "'Cinzel',serif", fontSize: "0.6rem", letterSpacing: "0.12em",
+                color: "#0a0415", textDecoration: "none",
+                padding: "0.42rem 1rem", borderRadius: "8px",
+                background: "linear-gradient(110deg,#f59e0b,#d97706)",
+                fontWeight: 700, boxShadow: "0 2px 12px rgba(245,158,11,0.35)",
+                transition: "box-shadow 0.2s,transform 0.2s",
+              }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(245,158,11,0.55)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 2px 12px rgba(245,158,11,0.35)"; e.currentTarget.style.transform = "translateY(0)"; }}
+              >JOIN FREE</Link>
+            </>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="group flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-white transition-all cursor-pointer"
+                  style={{ backdropFilter: "blur(10px)" }}
+                >
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#c084fc] to-[#7c3aed] flex items-center justify-center text-white text-[9px] font-bold shadow-sm overflow-hidden border border-[#a78bfa]/30">
+                    {profile?.photoURL ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={profile.photoURL} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      getInitials()
+                    )}
+                  </div>
+                  <span className="text-[10px] font-bold tracking-wide" style={{ fontFamily: "sans-serif" }}>
+                    {getDisplayName()}
+                  </span>
+                  <div className={`opacity-50 group-hover:opacity-100 transition-all duration-200 ${showUserMenu ? "rotate-180" : ""}`}>
+                    <ChevronDown size={12} />
+                  </div>
+                </button>
+
+                {/* Dropdown */}
+                {showUserMenu && (
+                  <div className="absolute right-0 top-full mt-2 w-48 rounded-xl bg-[#0a0415]/95 border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right z-50">
+                    <div className="p-3 border-b border-white/10">
+                      <div className="text-[8px] text-[#a78bfa] font-mono uppercase mb-0.5 tracking-widest">
+                        Account
+                      </div>
+                      <div className="text-xs text-white font-bold truncate">
+                        {profile?.displayName || profile?.email || "Seeker"}
+                      </div>
+                    </div>
+                    <Link
+                      href={dashLink}
+                      onClick={() => setShowUserMenu(false)}
+                      className="flex items-center gap-2 w-full px-3 py-2.5 text-[10px] uppercase font-bold text-white/70 hover:text-white hover:bg-white/5 transition-colors text-left"
+                      style={{ fontFamily: "'Cinzel',serif", letterSpacing: "1px" }}
+                    >
+                      <LayoutDashboard size={12} /> Dashboard
+                    </Link>
+                    {profile?.role === "admin" && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center gap-2 w-full px-3 py-2.5 text-[10px] uppercase font-bold text-white/70 hover:text-white hover:bg-white/5 transition-colors text-left"
+                        style={{ fontFamily: "'Cinzel',serif", letterSpacing: "1px" }}
+                      >
+                        <Users size={12} /> Admin
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={logout}
+                className="p-1.5 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/10 transition-all backdrop-blur-md"
+                title="Sign Out"
+              >
+                <LogOut size={14} />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Hamburger — mobile */}
@@ -125,30 +229,59 @@ function CosmicNavbar({ scrollY }: { scrollY: number }) {
         top: scrolled ? "52px" : "68px",
         left: 0, right: 0, zIndex: 99,
         background: "rgba(6,2,18,0.97)",
-        borderBottom: "1px solid rgba(109,40,217,0.18)",
+        borderBottom: mobileOpen ? "1px solid rgba(109,40,217,0.18)" : "none",
         backdropFilter: "blur(20px)",
         overflow: "hidden",
-        maxHeight: mobileOpen ? "380px" : "0px",
+        maxHeight: mobileOpen ? "500px" : "0px",
         /* cubic-bezier for snappy-yet-smooth slide */
         transition: "max-height 0.4s cubic-bezier(0.4,0,0.2,1), top 0.4s cubic-bezier(0.4,0,0.2,1)",
       }} className="nav-mobile-menu">
         <div style={{ padding: "0.75rem 1.5rem 1.5rem", display: "flex", flexDirection: "column" }}>
-          {[["Astrologers","/astrologers"],["Horoscopes","/horoscopes"],["About","/about"]].map(([label,href]) => (
+          {[["Astrologers", "/astrologers"]].map(([label, href]) => (
             <Link key={href} href={href} onClick={() => setMobileOpen(false)}
               style={{ fontFamily: "'Cinzel',serif", fontSize: "0.72rem", letterSpacing: "0.12em", color: "#9ca3af", textDecoration: "none", padding: "0.7rem 0", borderBottom: "1px solid rgba(139,92,246,0.07)" }}>
               {label.toUpperCase()}
             </Link>
           ))}
-          <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
-            <Link href="/auth/login" onClick={() => setMobileOpen(false)}
-              style={{ flex: 1, textAlign: "center", fontFamily: "'Cinzel',serif", fontSize: "0.65rem", letterSpacing: "0.12em", color: "#c4b5fd", textDecoration: "none", padding: "0.65rem", borderRadius: "8px", border: "1px solid rgba(139,92,246,0.3)" }}>
-              SIGN IN
-            </Link>
-            <Link href="/auth/register" onClick={() => setMobileOpen(false)}
-              style={{ flex: 1, textAlign: "center", fontFamily: "'Cinzel',serif", fontSize: "0.65rem", letterSpacing: "0.12em", color: "#0a0415", textDecoration: "none", padding: "0.65rem", borderRadius: "8px", background: "linear-gradient(110deg,#f59e0b,#d97706)", fontWeight: 700 }}>
-              GET STARTED
-            </Link>
-          </div>
+
+          {loading ? null : user ? (
+            <div style={{ marginTop: "1rem", padding: "1rem", borderRadius: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(to top right, #6d28d9, #c084fc)", display: "flex", alignItems: "center", justifyItems: "center", color: "white", fontWeight: "bold", overflow: "hidden", border: "1px solid rgba(167,139,250,0.3)" }}>
+                  {profile?.photoURL ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={profile.photoURL} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>{getInitials()}</div>
+                  )}
+                </div>
+                <div style={{ overflow: "hidden" }}>
+                  <div style={{ color: "white", fontWeight: "bold", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontFamily: "sans-serif" }}>{getDisplayName()}</div>
+                  <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{profile?.email}</div>
+                </div>
+              </div>
+              <Link href={dashLink} style={{ width: "100%", padding: "0.75rem", marginBottom: "0.5rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", fontWeight: "bold", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", color: "white", fontSize: "0.75rem", textTransform: "uppercase", fontFamily: "'Cinzel',serif", letterSpacing: "1px", textDecoration: "none" }} onClick={() => setMobileOpen(false)}>
+                <LayoutDashboard size={14} /> DASHBOARD
+              </Link>
+              <button
+                onClick={() => { logout(); setMobileOpen(false); }}
+                style={{ width: "100%", padding: "0.75rem", background: "rgba(239,68,68,0.1)", color: "#f87171", border: "1px solid rgba(239,68,68,0.1)", fontWeight: "bold", borderRadius: "8px", display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center", gap: "0.5rem", fontSize: "0.75rem", textTransform: "uppercase", fontFamily: "'Cinzel',serif", letterSpacing: "1px", cursor: "pointer" }}
+              >
+                <LogOut size={14} /> SIGN OUT
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
+              <Link href="/auth/login" onClick={() => setMobileOpen(false)}
+                style={{ flex: 1, textAlign: "center", fontFamily: "'Cinzel',serif", fontSize: "0.65rem", letterSpacing: "0.12em", color: "#c4b5fd", textDecoration: "none", padding: "0.65rem", borderRadius: "8px", border: "1px solid rgba(139,92,246,0.3)" }}>
+                SIGN IN
+              </Link>
+              <Link href="/auth/register" onClick={() => setMobileOpen(false)}
+                style={{ flex: 1, textAlign: "center", fontFamily: "'Cinzel',serif", fontSize: "0.65rem", letterSpacing: "0.12em", color: "#0a0415", textDecoration: "none", padding: "0.65rem", borderRadius: "8px", background: "linear-gradient(110deg,#f59e0b,#d97706)", fontWeight: 700 }}>
+                JOIN FREE
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </>
@@ -166,17 +299,17 @@ function PlanetLayer({ scrollY }: { scrollY: number }) {
         viewBox="0 0 320 200">
         <defs>
           <radialGradient id="satGrad" cx="38%" cy="32%">
-            <stop offset="0%"   stopColor="#7c3aed" />
-            <stop offset="50%"  stopColor="#4c1d95" />
+            <stop offset="0%" stopColor="#7c3aed" />
+            <stop offset="50%" stopColor="#4c1d95" />
             <stop offset="100%" stopColor="#1e0a3c" />
           </radialGradient>
         </defs>
         <ellipse cx="160" cy="110" rx="140" ry="28" fill="none" stroke="rgba(180,130,255,0.45)" strokeWidth="10" />
-        <ellipse cx="160" cy="110" rx="140" ry="28" fill="none" stroke="rgba(140,80,220,0.2)"  strokeWidth="20" />
-        <circle  cx="160" cy="110" r="58" fill="url(#satGrad)" />
+        <ellipse cx="160" cy="110" rx="140" ry="28" fill="none" stroke="rgba(140,80,220,0.2)" strokeWidth="20" />
+        <circle cx="160" cy="110" r="58" fill="url(#satGrad)" />
         <ellipse cx="160" cy="100" rx="55" ry="6" fill="none" stroke="rgba(167,139,250,0.15)" strokeWidth="4" />
         <ellipse cx="160" cy="118" rx="52" ry="5" fill="none" stroke="rgba(167,139,250,0.10)" strokeWidth="3" />
-        <circle  cx="245" cy="48"  r="14" fill="#2e1065" stroke="rgba(167,139,250,0.3)" strokeWidth="1" />
+        <circle cx="245" cy="48" r="14" fill="#2e1065" stroke="rgba(167,139,250,0.3)" strokeWidth="1" />
       </svg>
 
       {/* Moon – top-right */}
@@ -185,17 +318,17 @@ function PlanetLayer({ scrollY }: { scrollY: number }) {
         viewBox="0 0 160 160">
         <defs>
           <radialGradient id="moonGrad" cx="40%" cy="35%">
-            <stop offset="0%"   stopColor="#6b5b8a" />
-            <stop offset="60%"  stopColor="#3b2d5e" />
+            <stop offset="0%" stopColor="#6b5b8a" />
+            <stop offset="60%" stopColor="#3b2d5e" />
             <stop offset="100%" stopColor="#1a1033" />
           </radialGradient>
         </defs>
-        <circle cx="80"  cy="80"  r="72" fill="url(#moonGrad)" />
-        <circle cx="55"  cy="50"  r="12" fill="none" stroke="rgba(100,80,140,0.5)"  strokeWidth="2.5" />
-        <circle cx="100" cy="65"  r="8"  fill="none" stroke="rgba(100,80,140,0.4)"  strokeWidth="2" />
-        <circle cx="70"  cy="105" r="15" fill="none" stroke="rgba(100,80,140,0.45)" strokeWidth="2.5" />
-        <circle cx="115" cy="95"  r="6"  fill="none" stroke="rgba(100,80,140,0.35)" strokeWidth="1.5" />
-        <circle cx="45"  cy="85"  r="5"  fill="none" stroke="rgba(100,80,140,0.3)"  strokeWidth="1.5" />
+        <circle cx="80" cy="80" r="72" fill="url(#moonGrad)" />
+        <circle cx="55" cy="50" r="12" fill="none" stroke="rgba(100,80,140,0.5)" strokeWidth="2.5" />
+        <circle cx="100" cy="65" r="8" fill="none" stroke="rgba(100,80,140,0.4)" strokeWidth="2" />
+        <circle cx="70" cy="105" r="15" fill="none" stroke="rgba(100,80,140,0.45)" strokeWidth="2.5" />
+        <circle cx="115" cy="95" r="6" fill="none" stroke="rgba(100,80,140,0.35)" strokeWidth="1.5" />
+        <circle cx="45" cy="85" r="5" fill="none" stroke="rgba(100,80,140,0.3)" strokeWidth="1.5" />
       </svg>
 
       {/* Gas giant – mid-right */}
@@ -204,13 +337,13 @@ function PlanetLayer({ scrollY }: { scrollY: number }) {
         viewBox="0 0 320 320">
         <defs>
           <radialGradient id="gasGrad" cx="35%" cy="30%">
-            <stop offset="0%"   stopColor="#7c3aed" />
-            <stop offset="40%"  stopColor="#4c1d95" />
-            <stop offset="80%"  stopColor="#2e1065" />
+            <stop offset="0%" stopColor="#7c3aed" />
+            <stop offset="40%" stopColor="#4c1d95" />
+            <stop offset="80%" stopColor="#2e1065" />
             <stop offset="100%" stopColor="#0d0520" />
           </radialGradient>
         </defs>
-        <circle  cx="160" cy="160" r="150" fill="url(#gasGrad)" />
+        <circle cx="160" cy="160" r="150" fill="url(#gasGrad)" />
         <ellipse cx="160" cy="135" rx="148" ry="14" fill="none" stroke="rgba(139,92,246,0.12)" strokeWidth="10" />
         <ellipse cx="160" cy="160" rx="146" ry="12" fill="none" stroke="rgba(109,40,217,0.10)" strokeWidth="8" />
         <ellipse cx="160" cy="185" rx="145" ry="10" fill="none" stroke="rgba(139,92,246,0.08)" strokeWidth="6" />
@@ -222,12 +355,12 @@ function PlanetLayer({ scrollY }: { scrollY: number }) {
         viewBox="0 0 110 110">
         <defs>
           <radialGradient id="redGrad" cx="35%" cy="30%">
-            <stop offset="0%"   stopColor="#ef4444" />
-            <stop offset="55%"  stopColor="#7f1d1d" />
+            <stop offset="0%" stopColor="#ef4444" />
+            <stop offset="55%" stopColor="#7f1d1d" />
             <stop offset="100%" stopColor="#1c0505" />
           </radialGradient>
         </defs>
-        <circle  cx="55" cy="55" r="48" fill="url(#redGrad)" />
+        <circle cx="55" cy="55" r="48" fill="url(#redGrad)" />
         <ellipse cx="55" cy="48" rx="44" ry="5" fill="none" stroke="rgba(248,113,113,0.12)" strokeWidth="5" />
         <ellipse cx="55" cy="61" rx="42" ry="4" fill="none" stroke="rgba(248,113,113,0.08)" strokeWidth="3" />
       </svg>
@@ -238,13 +371,13 @@ function PlanetLayer({ scrollY }: { scrollY: number }) {
         viewBox="0 0 100 100">
         <defs>
           <radialGradient id="iceGrad" cx="38%" cy="32%">
-            <stop offset="0%"   stopColor="#67e8f9" />
-            <stop offset="55%"  stopColor="#164e63" />
+            <stop offset="0%" stopColor="#67e8f9" />
+            <stop offset="55%" stopColor="#164e63" />
             <stop offset="100%" stopColor="#03111a" />
           </radialGradient>
         </defs>
         <ellipse cx="50" cy="50" rx="65" ry="11" fill="none" stroke="rgba(103,232,249,0.22)" strokeWidth="3" />
-        <circle  cx="50" cy="50" r="38" fill="url(#iceGrad)" />
+        <circle cx="50" cy="50" r="38" fill="url(#iceGrad)" />
       </svg>
 
       {/* Comet streak 1 */}
@@ -283,25 +416,25 @@ function ZodiacWheel({ rotation, selectedIdx, hoveredIdx, onSelect, onHover, siz
       <svg width={size} height={size} style={{ overflow: "visible" }}>
         <defs>
           <radialGradient id="wOrbGrad" cx="38%" cy="32%">
-            <stop offset="0%"   stopColor="#9333ea" stopOpacity="0.95" />
-            <stop offset="55%"  stopColor="#3b0764" stopOpacity="0.98" />
+            <stop offset="0%" stopColor="#9333ea" stopOpacity="0.95" />
+            <stop offset="55%" stopColor="#3b0764" stopOpacity="0.98" />
             <stop offset="100%" stopColor="#0a0118" />
           </radialGradient>
           <radialGradient id="wBgGlow" cx="50%" cy="50%">
-            <stop offset="0%"   stopColor="#7c3aed" stopOpacity="0.18" />
+            <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.18" />
             <stop offset="100%" stopColor="transparent" stopOpacity="0" />
           </radialGradient>
         </defs>
         <circle cx={cx} cy={cy} r={outerR + 60 * scale} fill="url(#wBgGlow)" />
         <circle cx={cx} cy={cy} r={outerR + 32 * scale} fill="none" stroke="rgba(139,92,246,0.07)" strokeWidth="1" strokeDasharray="2 12" />
         <circle cx={cx} cy={cy} r={outerR + 14 * scale} fill="none" stroke="rgba(139,92,246,0.13)" strokeWidth="0.8" />
-        <circle cx={cx} cy={cy} r={outerR - 2 * scale}  fill="none" stroke="rgba(139,92,246,0.06)" strokeWidth="0.5" />
-        <circle cx={cx} cy={cy} r={innerR + 8 * scale}  fill="none" stroke="rgba(139,92,246,0.08)" strokeWidth="0.5" strokeDasharray="1 8" />
+        <circle cx={cx} cy={cy} r={outerR - 2 * scale} fill="none" stroke="rgba(139,92,246,0.06)" strokeWidth="0.5" />
+        <circle cx={cx} cy={cy} r={innerR + 8 * scale} fill="none" stroke="rgba(139,92,246,0.08)" strokeWidth="0.5" strokeDasharray="1 8" />
         {ZODIAC.map((_, i) => {
           const ang = ((i * 30) + rotation - 90) * (Math.PI / 180);
           return <line key={i}
             x1={cx + (innerR + 10 * scale) * Math.cos(ang)} y1={cy + (innerR + 10 * scale) * Math.sin(ang)}
-            x2={cx + (outerR - 5 * scale)  * Math.cos(ang)} y2={cy + (outerR - 5 * scale)  * Math.sin(ang)}
+            x2={cx + (outerR - 5 * scale) * Math.cos(ang)} y2={cy + (outerR - 5 * scale) * Math.sin(ang)}
             stroke="rgba(139,92,246,0.06)" strokeWidth="0.5" />;
         })}
         {ZODIAC.map((z, i) => {
@@ -322,8 +455,8 @@ function ZodiacWheel({ rotation, selectedIdx, hoveredIdx, onSelect, onHover, siz
         })}
         <circle cx={cx} cy={cy} r={innerR - 10 * scale} fill="url(#wOrbGrad)" stroke="rgba(139,92,246,0.25)" strokeWidth="1.5" />
         <circle cx={cx} cy={cy} r={innerR - 18 * scale} fill="none" stroke="rgba(139,92,246,0.10)" strokeWidth="0.5" />
-        <text x={cx} y={cy + 2}          textAnchor="middle" dominantBaseline="middle" fontSize={`${28 * scale}`} fill="#e9d5ff" fontFamily="serif" style={{ filter: "drop-shadow(0 0 14px rgba(167,139,250,0.9))" }}>✦</text>
-        <text x={cx} y={cy + 26 * scale} textAnchor="middle" dominantBaseline="middle" fontSize={`${7 * scale}`}  fill="#5b21b6" fontFamily="'Cinzel',serif" letterSpacing="2">ASTROCALL</text>
+        <text x={cx} y={cy + 2} textAnchor="middle" dominantBaseline="middle" fontSize={`${28 * scale}`} fill="#e9d5ff" fontFamily="serif" style={{ filter: "drop-shadow(0 0 14px rgba(167,139,250,0.9))" }}>✦</text>
+        <text x={cx} y={cy + 26 * scale} textAnchor="middle" dominantBaseline="middle" fontSize={`${7 * scale}`} fill="#5b21b6" fontFamily="'Cinzel',serif" letterSpacing="2">ASTROCALL</text>
       </svg>
       <div style={{ height: 28, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
         {(hoveredIdx !== null || selectedIdx !== null) && (() => {
@@ -344,17 +477,17 @@ function ZodiacWheel({ rotation, selectedIdx, hoveredIdx, onSelect, onHover, siz
 /* ─── Reading Panel ── */
 function ReadingPanel({ sign, onClose }: { sign: ZodiacSign; onClose: () => void }) {
   const [activeType, setActiveType] = useState<ReadingTypeId>("daily");
-  const [reading, setReading]       = useState("");
-  const [loading, setLoading]       = useState(false);
-  const [luckyInfo, setLuckyInfo]   = useState<string[]>([]);
+  const [reading, setReading] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [luckyInfo, setLuckyInfo] = useState<string[]>([]);
 
   const fetchReading = useCallback(async (type: ReadingTypeId) => {
     setLoading(true); setReading(""); setLuckyInfo([]);
     try {
-      const res  = await fetch("/api/horoscope", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ signName: sign.name, readingType: type }) });
+      const res = await fetch("/api/horoscope", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ signName: sign.name, readingType: type }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed");
-      const text  = (data.text as string) ?? "";
+      const text = (data.text as string) ?? "";
       const match = text.match(/LUCKY:\s*(.+)/);
       if (match) setLuckyInfo(match[1].split("|").map((s: string) => s.trim()));
       setReading(text.replace(/LUCKY:.*$/m, "").trim());
@@ -424,13 +557,13 @@ function ReadingPanel({ sign, onClose }: { sign: ZodiacSign; onClose: () => void
 
 /* ─── HomePage ── */
 export default function HomePage() {
-  const [rotation,    setRotation]    = useState(0);
-  const [hoveredIdx,  setHoveredIdx]  = useState<number | null>(null);
+  const [rotation, setRotation] = useState(0);
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
-  const [scrollY,     setScrollY]     = useState(0);
-  const [wheelSize,   setWheelSize]   = useState(400);
-  const rotRef  = useRef(0);
-  const rafRef  = useRef<number>(0);
+  const [scrollY, setScrollY] = useState(0);
+  const [wheelSize, setWheelSize] = useState(400);
+  const rotRef = useRef(0);
+  const rafRef = useRef<number>(0);
   const lastRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -442,10 +575,10 @@ export default function HomePage() {
   useEffect(() => {
     const update = () => {
       const w = window.innerWidth;
-      if (w < 480)       setWheelSize(Math.min(w - 32, 300));
-      else if (w < 768)  setWheelSize(320);
+      if (w < 480) setWheelSize(Math.min(w - 32, 300));
+      else if (w < 768) setWheelSize(320);
       else if (w < 1024) setWheelSize(340);
-      else               setWheelSize(400);
+      else setWheelSize(400);
     };
     update();
     window.addEventListener("resize", update);
@@ -464,13 +597,13 @@ export default function HomePage() {
   }, []);
 
   const handleSelect = (idx: number) => { setSelectedIdx(prev => prev === idx ? null : idx); };
-  const handleClose  = () => setSelectedIdx(null);
+  const handleClose = () => setSelectedIdx(null);
 
   const features = [
-    { icon: <Award  size={28} color="#f59e0b" />, title: "Certified Vedic Masters",  desc: "Rigorously verified astrologers with decades of Vedic study. No shortcuts.",       accent: "#f59e0b" },
-    { icon: <Video  size={28} color="#818cf8" />, title: "HD Video Consultations",   desc: "Private, encrypted sessions powered by enterprise-grade streaming.",                accent: "#818cf8" },
-    { icon: <Zap    size={28} color="#34d399" />, title: "Instant Availability",     desc: "See who's online right now. Ancient wisdom on modern time — no waiting.",           accent: "#34d399" },
-    { icon: <Shield size={28} color="#f87171" />, title: "100% Confidential",        desc: "All sessions encrypted, never stored. What the stars reveal stays with you.",       accent: "#f87171" },
+    { icon: <Award size={28} color="#f59e0b" />, title: "Certified Vedic Masters", desc: "Rigorously verified astrologers with decades of Vedic study. No shortcuts.", accent: "#f59e0b" },
+    { icon: <Video size={28} color="#818cf8" />, title: "HD Video Consultations", desc: "Private, encrypted sessions powered by enterprise-grade streaming.", accent: "#818cf8" },
+    { icon: <Zap size={28} color="#34d399" />, title: "Instant Availability", desc: "See who's online right now. Ancient wisdom on modern time — no waiting.", accent: "#34d399" },
+    { icon: <Shield size={28} color="#f87171" />, title: "100% Confidential", desc: "All sessions encrypted, never stored. What the stars reveal stays with you.", accent: "#f87171" },
   ];
 
   return (
@@ -587,7 +720,7 @@ export default function HomePage() {
       <section style={{ position: "relative", zIndex: 2, padding: "1.5rem 1rem 5rem", background: "rgba(19,7,38,0.4)" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: "1.1rem" }}>
           {[
-            { quote: "The reading was incredibly accurate. My astrologer explained my birth chart in a way no one ever had before.", name: "Priya S.",  sign: "♋ Cancer" },
+            { quote: "The reading was incredibly accurate. My astrologer explained my birth chart in a way no one ever had before.", name: "Priya S.", sign: "♋ Cancer" },
             { quote: "I was skeptical at first, but after my session I felt completely at peace. Highly recommend to anyone seeking guidance.", name: "Rahul M.", sign: "♈ Aries" },
             { quote: "Professional, insightful, and deeply knowledgeable. This platform has the best Vedic astrologers I've ever consulted.", name: "Anjali K.", sign: "♍ Virgo" },
           ].map((t, i) => (
@@ -622,8 +755,8 @@ export default function HomePage() {
           <div style={{ position: "absolute", top: "8%", right: "28%", animation: "floatShip 7s ease-in-out infinite" }}>
             <svg width="45" height="17" viewBox="0 0 55 20" fill="none" style={{ filter: "drop-shadow(0 0 5px rgba(245,158,11,0.5))", opacity: 0.8 }}>
               <ellipse cx="27" cy="11" rx="25" ry="6" fill="#1c0a3a" stroke="rgba(245,158,11,0.4)" strokeWidth="0.8" />
-              <ellipse cx="27" cy="9"  rx="14" ry="9" fill="#2e0e52" />
-              <ellipse cx="27" cy="7"  rx="7"  ry="5" fill="#4c1d95" />
+              <ellipse cx="27" cy="9" rx="14" ry="9" fill="#2e0e52" />
+              <ellipse cx="27" cy="7" rx="7" ry="5" fill="#4c1d95" />
             </svg>
           </div>
           <svg viewBox="0 0 1440 340" preserveAspectRatio="none" style={{ position: "absolute", bottom: 0, left: 0, width: "100%", height: "clamp(180px,40vw,340px)" }}>
@@ -631,12 +764,12 @@ export default function HomePage() {
             <path d="M0,340 L0,240 L60,190 L140,260 L220,180 L320,240 L420,160 L500,230 L600,155 L700,230 L800,160 L920,245 L1040,165 L1160,240 L1280,160 L1380,220 L1440,170 L1440,340 Z" fill="#12022e" />
             <path d="M0,340 L0,280 L100,240 L200,300 L300,230 L400,280 L500,220 L600,275 L720,210 L840,270 L960,215 L1080,270 L1200,220 L1320,270 L1440,230 L1440,340 Z" fill="#08011a" />
             <g fill="#05010f">
-              {[60,80,100,120,140].map((x,i) => (<polygon key={i} points={`${x},${300-i*8} ${x-12+i*2},${310-i*4} ${x+12-i*2},${310-i*4}`} />))}
+              {[60, 80, 100, 120, 140].map((x, i) => (<polygon key={i} points={`${x},${300 - i * 8} ${x - 12 + i * 2},${310 - i * 4} ${x + 12 - i * 2},${310 - i * 4}`} />))}
             </g>
             <ellipse cx="720" cy="282" rx="80" ry="16" fill="#1a0535" />
             <path d="M648,282 A72,56 0 0 1 792,282 Z" fill="#130726" />
             <path d="M660,282 A60,45 0 0 1 780,282 Z" fill="#1e0b3a" stroke="rgba(139,92,246,0.3)" strokeWidth="1" />
-            {[686,720,754].map((x,i) => (<ellipse key={i} cx={x} cy={275-(i===1?8:4)} rx="8" ry="5" fill="rgba(245,158,11,0.25)" stroke="rgba(245,158,11,0.35)" strokeWidth="0.5" style={{ filter:"blur(0.5px)" }} />))}
+            {[686, 720, 754].map((x, i) => (<ellipse key={i} cx={x} cy={275 - (i === 1 ? 8 : 4)} rx="8" ry="5" fill="rgba(245,158,11,0.25)" stroke="rgba(245,158,11,0.35)" strokeWidth="0.5" style={{ filter: "blur(0.5px)" }} />))}
             <line x1="720" y1="227" x2="720" y2="260" stroke="rgba(139,92,246,0.5)" strokeWidth="2" />
             <line x1="720" y1="227" x2="700" y2="218" stroke="rgba(139,92,246,0.4)" strokeWidth="1.5" />
             <rect x="0" y="320" width="1440" height="20" fill="#06000f" />
@@ -653,7 +786,7 @@ export default function HomePage() {
         <div style={{ background: "#06000f", borderTop: "1px solid rgba(139,92,246,0.12)", padding: "1rem 1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
           <p style={{ fontFamily: "'Cormorant Garamond',serif", color: "#374151", fontSize: "0.82rem", fontStyle: "italic", margin: 0 }}>✦ AstroCall © {new Date().getFullYear()} · Crafted under the cosmic sky ✦</p>
           <div style={{ display: "flex", gap: "1.25rem", flexWrap: "wrap" }}>
-            {["Astrologers","Horoscopes","Privacy","Terms"].map(l => (
+            {["Astrologers", "Horoscopes", "Privacy", "Terms"].map(l => (
               <Link key={l} href={`/${l.toLowerCase()}`} style={{ fontFamily: "'Cinzel',serif", fontSize: "0.58rem", letterSpacing: "0.15em", color: "#4b5563", textDecoration: "none" }}>{l.toUpperCase()}</Link>
             ))}
           </div>
