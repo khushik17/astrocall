@@ -23,7 +23,7 @@ interface CustomCallRoomProps {
   setChatOpen: (v: boolean) => void;
 }
 
-// ── Dynamic imports (no SSR) ─────────────────────────────────────────────────
+
 const LiveKitRoom = dynamic(
   () => import("@livekit/components-react").then(m => m.LiveKitRoom),
   { ssr: false }
@@ -234,9 +234,7 @@ export default function CallPage() {
                 <div style={{ width: 36, height: 36, borderRadius: "50%", border: "2px solid #7c3aed", borderTopColor: "transparent", animation: "spin 0.9s linear infinite" }} />
               </div>
             ) : (
-              // ── LiveKit Room ────────────────────────────────────────────────
-              // NOTE: RoomAudioRenderer is rendered INSIDE CustomCallRoom.
-              // It MUST be inside <LiveKitRoom> to access the room context.
+              
               <LiveKitRoom
                 token={tokenData.token}
                 serverUrl={tokenData.wsUrl}
