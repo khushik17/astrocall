@@ -6,7 +6,7 @@ admin.initializeApp();
 const db = admin.firestore();
 
 // ─── createRoomToken ─────────────────────────────────────────────────────────
-// Called by the client to get a LiveKit JWT token for a session.
+
 export const createRoomToken = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "Must be logged in");
@@ -57,7 +57,7 @@ export const createRoomToken = functions.https.onCall(async (data, context) => {
   return { token, wsUrl };
 });
 
-// ─── onSessionEnded ───────────────────────────────────────────────────────────
+
 // Firestore trigger: update astrologer stats when session ends
 export const onSessionEnded = functions.firestore
   .document("sessions/{sessionId}")
@@ -80,7 +80,7 @@ export const onSessionEnded = functions.firestore
   });
 
 // ─── seedDemoData ─────────────────────────────────────────────────────────────
-// HTTP function to seed demo astrologers (call once during setup)
+
 export const seedDemoData = functions.https.onRequest(async (req, res) => {
   // Simple secret check
   if (req.query.secret !== "astrocall-seed-2024") {

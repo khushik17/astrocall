@@ -4,7 +4,7 @@ import "@livekit/components-styles";
 import { AuthProvider } from "@/hooks/useAuth";
 import StarCanvas from "@/components/StarCanvas";
 import GlobalCallAlert from "@/components/GlobalCallAlert";
-import MobileBlocker from "@/components/MobileBlocker";
+
 
 
 
@@ -21,7 +21,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           {children}
           <GlobalCallAlert />
-          <MobileBlocker />
         </AuthProvider>
       </body>
     </html>
