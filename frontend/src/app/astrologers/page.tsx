@@ -56,17 +56,17 @@ export default function AstrologersPage() {
   return (
     <div style={{ minHeight: "100vh", overflowX: "hidden" }}>
 
-      {/* Bg nebula */}
+      
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse 60% 50% at 20% 20%, rgba(60,0,120,0.15) 0%, transparent 70%), radial-gradient(ellipse 50% 40% at 80% 70%, rgba(20,0,80,0.12) 0%, transparent 70%)" }} />
 
       <div style={{ position: "relative", zIndex: 10 }}><GlassNavBar /></div>
 
       <div className="astro-page-container">
 
-        {/* ── HERO HEADER ── */}
+     
         <div className="hero-section">
 
-          {/* Live pill */}
+          
           <div className="live-pill">
             <span className="live-dot" />
             <span className="live-text">{onlineCount} MASTERS ONLINE NOW</span>
@@ -96,7 +96,7 @@ export default function AstrologersPage() {
           </div>
         </div>
 
-        {/* ── FILTER BAR ── */}
+        
         <div className="filter-bar">
           <div className="filter-top-row">
             {/* Search */}
@@ -133,7 +133,6 @@ export default function AstrologersPage() {
           </div>
         </div>
 
-        {/* Result count */}
         <p className="result-count">
           <span className="result-count--online">{filtered.filter(a => a.isOnline).length}</span>
           {" online · "}
