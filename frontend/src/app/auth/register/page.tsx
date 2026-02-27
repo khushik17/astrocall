@@ -77,8 +77,7 @@ export default function RegisterPage() {
                 onChange={e => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                /* Prevent iOS zoom on focus (font-size >= 16px handled by input-field,
-                   but add inputMode for better mobile keyboard) */
+                
                 inputMode="email"
               />
             </div>
